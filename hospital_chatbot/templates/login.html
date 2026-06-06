@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign in – City General Hospital</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body class="login-body">
+
+<div class="login-shell">
+
+  <!-- Left: Hero panel -->
+  <div class="login-hero">
+    <div class="hero-brand">
+      <div class="brand-cross hero-cross">
+        <span class="cross-h"></span><span class="cross-v"></span>
+      </div>
+      <div>
+        <div class="hero-title">CityGen Hospital</div>
+        <div class="hero-sub">AI Appointment System</div>
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <h1>Healthcare<br/>at your fingertips.</h1>
+      <p>Book, reschedule, and manage your appointments with our AI-powered assistant.
+         Available 24/7 to serve you.</p>
+
+      <div class="hero-features">
+        <div class="hero-feat">
+          <div class="feat-icon">✓</div>
+          <div><strong>Instant booking</strong><br/><span>Confirm appointments in seconds</span></div>
+        </div>
+        <div class="hero-feat">
+          <div class="feat-icon">✓</div>
+          <div><strong>Smart routing</strong><br/><span>AI matches symptoms to specialists</span></div>
+        </div>
+        <div class="hero-feat">
+          <div class="feat-icon">✓</div>
+          <div><strong>Live updates</strong><br/><span>See your appointments in real time</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-footer">© 2026 City General Hospital · 24/7 emergency: 1990</div>
+  </div>
+
+  <!-- Right: Login form -->
+  <div class="login-form-wrap">
+    <div class="login-form">
+      <h2>Sign in to your account</h2>
+      <p class="login-sub">Use your NIC and registered name. New patients are auto-registered.</p>
+
+      <div id="loginError" class="login-error" style="display:none"></div>
+
+      <label class="form-label">Account type</label>
+      <div class="role-toggle">
+        <button type="button" class="role-opt active" data-role="patient" onclick="selectRole('patient')">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          Patient
+        </button>
+        <button type="button" class="role-opt" data-role="admin" onclick="selectRole('admin')">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+          Admin
+        </button>
+      </div>
+
+      <label class="form-label">NIC Number</label>
+      <input type="text" id="nicInput" class="form-input" placeholder="e.g. 200012345678 or ADMIN001"
+             onkeydown="if(event.key==='Enter') doLogin()" autocomplete="off"/>
+
+      <label class="form-label">Full Name</label>
+      <input type="text" id="nameInput" class="form-input" placeholder="As registered with the hospital"
+             onkeydown="if(event.key==='Enter') doLogin()" autocomplete="off"/>
+
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">
+        Sign In
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M10 17l5-5-5-5v3H3v4h7v3zm10-15h-9c-1.11 0-2 .9-2 2v4h2V4h9v16h-9v-4H9v4c0 1.1.89 2 2 2h9c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      </button>
+
+      <div class="login-divider"><span>Quick demo accounts</span></div>
+      <div class="quick-accts">
+        <button class="quick-acct" onclick="fillCreds('200012345678','John Smith','patient')">
+          <span>John Smith</span><small>Patient</small>
+        </button>
+        <button class="quick-acct" onclick="fillCreds('199523456789','Maria Garcia','patient')">
+          <span>Maria Garcia</span><small>Patient</small>
+        </button>
+        <button class="quick-acct" onclick="fillCreds('198934567890','Ahmed Hassan','patient')">
+          <span>Ahmed Hassan</span><small>Patient</small>
+        </button>
+        <button class="quick-acct admin" onclick="fillCreds('ADMIN001','Admin User','admin')">
+          <span>Admin User</span><small>Admin</small>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let role = 'patient';
+
+  function selectRole(r) {
+    role = r;
+    document.querySelectorAll('.role-opt').forEach(b =>
+      b.classList.toggle('active', b.dataset.role === r));
+  }
+
+  function fillCreds(nic, name, r) {
+    document.getElementById('nicInput').value  = nic;
+    document.getElementById('nameInput').value = name;
+    selectRole(r);
+  }
+
+  async function doLogin() {
+    const nic  = document.getElementById('nicInput').value.trim();
+    const name = document.getElementById('nameInput').value.trim();
+    const err  = document.getElementById('loginError');
+    const btn  = document.getElementById('loginBtn');
+
+    err.style.display = 'none';
+    if (!nic || !name) {
+      err.textContent = 'Please enter both NIC and name.';
+      err.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = 'Signing in…';
+
+    try {
+      const res  = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({nic, name, role})
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        err.textContent   = data.error || 'Login failed.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In <svg viewBox="0 0 24 24" width="16" height="16"><path d="M10 17l5-5-5-5v3H3v4h7v3zm10-15h-9c-1.11 0-2 .9-2 2v4h2V4h9v16h-9v-4H9v4c0 1.1.89 2 2 2h9c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
+        return;
+      }
+      window.location.href = data.role === 'admin' ? '/admin' : '/';
+    } catch (e) {
+      err.textContent   = 'Connection error. Try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+    }
+  }
+</script>
+
+</body>
+</html>

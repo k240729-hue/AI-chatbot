@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Appointments – City General Hospital{% endblock %}
+{% block page_title %}Appointments{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">All Appointments</h2>
+    <div class="card-header-right">
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="confirmed">Confirmed</button>
+        <button class="filter-tab" data-filter="cancelled">Cancelled</button>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="apptSearch" placeholder="Search patient or doctor…" oninput="filterTable()"/>
+      </div>
+      <div class="live-pill">
+        <span class="live-dot"></span>Auto-refresh
+      </div>
+      <span class="refresh-ts" id="lastRefresh"></span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table" id="apptTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient</th>
+          <th>Doctor</th>
+          <th>Department</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Booked At</th>
+        </tr>
+      </thead>
+      <tbody id="apptBody">
+        <tr><td colspan="8" class="table-empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span id="apptCount">0 appointments</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let allAppts = [];
+  let activeFilter = 'all';
+
+  document.querySelectorAll('.filter-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      renderTable();
+    });
+  });
+
+  function filterTable() { renderTable(); }
+
+  function renderTable() {
+    const search = (document.getElementById('apptSearch').value || '').toLowerCase();
+    let data = allAppts;
+    if (activeFilter !== 'all') data = data.filter(a => a.status === activeFilter);
+    if (search) data = data.filter(a =>
+      a.patient_name.toLowerCase().includes(search) ||
+      a.doctor_name.toLowerCase().includes(search) ||
+      a.department.toLowerCase().includes(search)
+    );
+
+    const tbody = document.getElementById('apptBody');
+    document.getElementById('apptCount').textContent = `${data.length} appointment${data.length !== 1 ? 's' : ''}`;
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="table-empty">No appointments found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map((a, i) => `
+      <tr class="appt-row ${a.status}">
+        <td class="row-num">${i + 1}</td>
+        <td><span class="patient-chip">${a.patient_name}</span></td>
+        <td>${a.doctor_name}</td>
+        <td><span class="dept-badge dept-${deptClass(a.department)}">${a.department}</span></td>
+        <td>${a.date}</td>
+        <td>${a.time}</td>
+        <td><span class="status-badge ${a.status}">${a.status}</span></td>
+        <td class="muted">${a.booked_at}</td>
+      </tr>`).join('');
+  }
+
+  async function loadAppointments() {
+    const data = await fetch('/api/appointments').then(r => r.json());
+    allAppts = data;
+    renderTable();
+    document.getElementById('lastRefresh').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
+
+    // Update sidebar badge
+    const confirmed = data.filter(a => a.status === 'confirmed').length;
+    const badge = document.getElementById('sideApptBadge');
+    if (badge) { badge.textContent = confirmed; badge.style.display = confirmed ? 'inline' : 'none'; }
+  }
+
+  loadAppointments();
+  setInterval(loadAppointments, 5000);
+</script>
+{% endblock %}

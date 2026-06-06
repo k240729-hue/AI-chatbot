@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – City General Hospital{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+{% if is_admin %}
+<!-- Stat Cards (admin only) -->
+<div class="stat-grid" id="statGrid">
+  <div class="stat-card blue">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value" id="s-patients">–</div>
+      <div class="stat-label">Registered Patients</div>
+    </div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value" id="s-doctors">–</div>
+      <div class="stat-label">Active Doctors</div>
+    </div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value" id="s-appointments">–</div>
+      <div class="stat-label">Confirmed Appointments</div>
+    </div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value" id="s-today">–</div>
+      <div class="stat-label">Today's Appointments</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Bottom Row -->
+<div class="dash-row">
+  <!-- Recent Appointments -->
+  <div class="card dash-card-wide">
+    <div class="card-header">
+      <h2 class="card-title">Recent Appointments</h2>
+      <a href="/appointments" class="card-link">View all →</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="recentApptTable">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Department</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="recentApptBody">
+          <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Doctor Availability -->
+  <div class="card dash-card-narrow">
+    <div class="card-header">
+      <h2 class="card-title">Doctor Availability</h2>
+      <a href="/doctors" class="card-link">View all →</a>
+    </div>
+    <div class="avail-list" id="availList">
+      <div class="table-empty">Loading…</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const isAdmin = {{ 'true' if is_admin else 'false' }};
+
+  async function loadDashboard() {
+    const fetches = [
+      fetch('/api/appointments').then(r => r.json()),
+      fetch('/api/doctors').then(r => r.json())
+    ];
+    if (isAdmin) fetches.unshift(fetch('/api/stats').then(r => r.json()));
+    const results = await Promise.all(fetches);
+    const stats   = isAdmin ? results[0] : null;
+    const appts   = isAdmin ? results[1] : results[0];
+    const doctors = isAdmin ? results[2] : results[1];
+
+    // Stats (admin only)
+    if (isAdmin && stats) {
+      document.getElementById('s-patients').textContent     = stats.total_patients;
+      document.getElementById('s-doctors').textContent      = stats.total_doctors;
+      document.getElementById('s-appointments').textContent = stats.total_appointments;
+      document.getElementById('s-today').textContent        = stats.today_appointments;
+    }
+
+    // Recent appointments (last 5)
+    const tbody = document.getElementById('recentApptBody');
+    const recent = appts.slice(0, 5);
+    if (recent.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="table-empty">No appointments yet.</td></tr>';
+    } else {
+      tbody.innerHTML = recent.map(a => `
+        <tr>
+          <td><span class="patient-chip">${a.patient_name}</span></td>
+          <td>${a.doctor_name}</td>
+          <td><span class="dept-badge dept-${deptClass(a.department)}">${a.department}</span></td>
+          <td>${a.date}</td>
+          <td>${a.time}</td>
+          <td><span class="status-badge ${a.status}">${a.status}</span></td>
+        </tr>`).join('');
+    }
+
+    // Doctor availability
+    const list = document.getElementById('availList');
+    list.innerHTML = doctors.map(d => `
+      <div class="avail-item">
+        <div class="avail-avatar dept-${deptClass(d.department)}">${initials(d.name)}</div>
+        <div class="avail-info">
+          <div class="avail-name">${d.name}</div>
+          <div class="avail-dept">${d.department}</div>
+        </div>
+        <div class="avail-slots ${d.slots_count > 0 ? 'has-slots' : 'no-slots'}">
+          ${d.slots_count} slot${d.slots_count !== 1 ? 's' : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  loadDashboard();
+  setInterval(loadDashboard, 8000);
+</script>
+{% endblock %}

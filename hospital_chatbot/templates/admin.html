@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel – City General Hospital{% endblock %}
+{% block page_title %}Admin Control Panel{% endblock %}
+
+{% block content %}
+<div class="admin-grid">
+
+  <!-- Stats overview -->
+  <div class="stat-grid">
+    <div class="stat-card blue">
+      <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+      <div class="stat-body"><div class="stat-value" id="a-patients">–</div><div class="stat-label">Patients</div></div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg></div>
+      <div class="stat-body"><div class="stat-value" id="a-doctors">–</div><div class="stat-label">Doctors</div></div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+      <div class="stat-body"><div class="stat-value" id="a-appts">–</div><div class="stat-label">Confirmed</div></div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg></div>
+      <div class="stat-body"><div class="stat-value" id="a-cancelled">–</div><div class="stat-label">Cancelled</div></div>
+    </div>
+  </div>
+
+  <!-- Add Slot Tool -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Add Availability Slot</h2>
+    </div>
+    <div class="admin-form">
+      <div class="form-row">
+        <div>
+          <label class="form-label">Doctor</label>
+          <select id="slotDoctor" class="form-select"></select>
+        </div>
+        <div>
+          <label class="form-label">Date</label>
+          <input type="date" id="slotDate" class="form-input"/>
+        </div>
+        <div>
+          <label class="form-label">Time</label>
+          <input type="time" id="slotTime" class="form-input"/>
+        </div>
+        <div>
+          <label class="form-label">&nbsp;</label>
+          <button class="primary-btn" onclick="addSlot()">+ Add Slot</button>
+        </div>
+      </div>
+      <div id="slotResult" class="form-result"></div>
+    </div>
+  </div>
+
+  <!-- All Appointments with Admin Actions -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">All Appointments</h2>
+      <div class="card-header-right">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="adminSearch" placeholder="Search…" oninput="renderAdminAppts()"/>
+        </div>
+        <div class="live-pill"><span class="live-dot"></span>Auto-refresh</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Patient</th><th>NIC</th><th>Doctor</th><th>Department</th><th>Date</th><th>Time</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="adminApptBody">
+          <tr><td colspan="9" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let adminAppts = [];
+
+  async function loadAdmin() {
+    const [stats, appts, doctors] = await Promise.all([
+      fetch('/api/stats').then(r => r.json()),
+      fetch('/api/appointments').then(r => r.json()),
+      fetch('/api/doctors').then(r => r.json())
+    ]);
+    document.getElementById('a-patients').textContent  = stats.total_patients;
+    document.getElementById('a-doctors').textContent   = stats.total_doctors;
+    document.getElementById('a-appts').textContent     = stats.total_appointments;
+    document.getElementById('a-cancelled').textContent = stats.cancelled;
+
+    const sel = document.getElementById('slotDoctor');
+    if (sel.options.length === 0) {
+      sel.innerHTML = doctors.map(d =>
+        `<option value="${d.id}">${d.name} — ${d.department}</option>`).join('');
+    }
+
+    adminAppts = appts;
+    renderAdminAppts();
+  }
+
+  function renderAdminAppts() {
+    const q = (document.getElementById('adminSearch').value || '').toLowerCase();
+    const data = q ? adminAppts.filter(a =>
+      a.patient_name.toLowerCase().includes(q) ||
+      a.patient_nic.toLowerCase().includes(q) ||
+      a.doctor_name.toLowerCase().includes(q)
+    ) : adminAppts;
+
+    const tbody = document.getElementById('adminApptBody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="table-empty">No appointments.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map((a, i) => `
+      <tr class="${a.status}">
+        <td class="row-num">${i + 1}</td>
+        <td><span class="patient-chip">${a.patient_name}</span></td>
+        <td class="muted">${a.patient_nic}</td>
+        <td>${a.doctor_name}</td>
+        <td><span class="dept-badge dept-${deptClass(a.department)}">${a.department}</span></td>
+        <td>${a.date}</td>
+        <td>${a.time}</td>
+        <td><span class="status-badge ${a.status}">${a.status}</span></td>
+        <td>
+          ${a.status === 'confirmed'
+              ? `<button class="action-danger" onclick="adminCancel('${a.id}')">Cancel</button>`
+              : '<span class="muted">—</span>'}
+        </td>
+      </tr>`).join('');
+  }
+
+  async function adminCancel(id) {
+    if (!confirm('Cancel this appointment? The slot will be returned to the doctor.')) return;
+    const res = await fetch('/api/admin/cancel-appointment', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id})
+    });
+    const data = await res.json();
+    if (data.ok) loadAdmin();
+    else alert('Failed: ' + (data.error || 'unknown'));
+  }
+
+  async function addSlot() {
+    const doctor_id = document.getElementById('slotDoctor').value;
+    const date      = document.getElementById('slotDate').value;
+    const time      = document.getElementById('slotTime').value;
+    const result    = document.getElementById('slotResult');
+    result.textContent = '';
+
+    if (!doctor_id || !date || !time) {
+      result.textContent = 'Please fill in all fields.';
+      result.className   = 'form-result err';
+      return;
+    }
+
+    const res  = await fetch('/api/admin/add-slot', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({doctor_id, date, time})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      result.textContent = `Slot added: ${date} at ${time}`;
+      result.className   = 'form-result ok';
+      document.getElementById('slotDate').value = '';
+      document.getElementById('slotTime').value = '';
+    } else {
+      result.textContent = 'Could not add slot.';
+      result.className   = 'form-result err';
+    }
+  }
+
+  loadAdmin();
+  setInterval(loadAdmin, 6000);
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Patients – City General Hospital{% endblock %}
+{% block page_title %}Patient Registry{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Registered Patients</h2>
+    <div class="card-header-right">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="patSearch" placeholder="Search by name…" oninput="renderPatients()"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient Name</th>
+          <th>NIC</th>
+          <th>Age</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Confirmed Appts</th>
+          <th>Registered</th>
+        </tr>
+      </thead>
+      <tbody id="patBody">
+        <tr><td colspan="7" class="table-empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span id="patCount">0 patients</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let allPatients = [];
+
+  function renderPatients() {
+    const q = (document.getElementById('patSearch').value || '').toLowerCase();
+    const data = q ? allPatients.filter(p => p.name.toLowerCase().includes(q)) : allPatients;
+    document.getElementById('patCount').textContent = `${data.length} patient${data.length !== 1 ? 's' : ''}`;
+
+    const tbody = document.getElementById('patBody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="table-empty">No patients found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map((p, i) => `
+      <tr>
+        <td class="row-num">${i + 1}</td>
+        <td>
+          <div class="pat-name-cell">
+            <div class="pat-avatar">${p.name.charAt(0).toUpperCase()}</div>
+            <span>${p.name}</span>
+          </div>
+        </td>
+        <td class="muted">${p.nic}</td>
+        <td>${p.age}</td>
+        <td>${p.phone}</td>
+        <td>${p.email}</td>
+        <td>
+          <span class="appt-count-badge ${p.appointment_count > 0 ? 'has-appts' : ''}">
+            ${p.appointment_count}
+          </span>
+        </td>
+        <td class="muted">${p.registered_at}</td>
+      </tr>`).join('');
+  }
+
+  async function loadPatients() {
+    allPatients = await fetch('/api/patients').then(r => r.json());
+    renderPatients();
+  }
+
+  loadPatients();
+  setInterval(loadPatients, 10000);
+</script>
+{% endblock %}

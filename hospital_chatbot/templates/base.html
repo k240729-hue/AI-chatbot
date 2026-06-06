@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}City General Hospital{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-cross"><span class="cross-h"></span><span class="cross-v"></span></div>
+      <div class="brand-text">
+        <span class="brand-name">CityGen</span>
+        <span class="brand-sub">Hospital</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/" class="nav-item {% if active_page=='dashboard' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="/appointments" class="nav-item {% if active_page=='appointments' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+        <span>Appointments</span>
+        <span class="nav-badge" id="sideApptBadge"></span>
+      </a>
+      <a href="/doctors" class="nav-item {% if active_page=='doctors' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        <span>Doctors</span>
+      </a>
+      {% if is_admin %}
+      <a href="/patients" class="nav-item {% if active_page=='patients' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        <span>Patients</span>
+      </a>
+      <a href="/admin" class="nav-item {% if active_page=='admin' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+        <span>Admin Panel</span>
+      </a>
+      {% endif %}
+      {% if current_user and current_user.role == 'patient' %}
+      <a href="/chat-page" class="nav-item {% if active_page=='chat' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+        <span>AI Assistant</span>
+      </a>
+      {% endif %}
+    </nav>
+
+    {% if current_user %}
+    <div class="user-card">
+      <div class="user-card-avatar {% if is_admin %}admin{% endif %}">
+        {{ current_user.name[0]|upper }}
+      </div>
+      <div class="user-card-info">
+        <div class="user-card-name">{{ current_user.name }}</div>
+        <div class="user-card-meta">
+          <span class="user-role-pill {% if is_admin %}admin{% endif %}">
+            {{ current_user.role|title }}
+          </span>
+          <span class="user-card-nic">{{ current_user.nic }}</span>
+        </div>
+      </div>
+      <a href="/logout" class="logout-btn" title="Sign out">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="sidebar-footer">
+      <div class="db-status">
+        <span class="status-dot" id="dbStatusDot"></span>
+        <span id="dbStatusText">Connecting…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-title">{% block page_title %}{% endblock %}</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="live-pill"><span class="live-dot"></span>Live</div>
+        <div class="topbar-time" id="topbarTime"></div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+{% if current_user and current_user.role == 'patient' and active_page != 'chat' %}
+<!-- ── FLOATING CHAT WIDGET (patients only, not on chat page) ── -->
+<div class="fab-wrap" id="fabWrap">
+  <div class="fab-panel" id="fabPanel">
+    <div class="fab-header">
+      <div class="fab-header-info">
+        <div class="fab-avatar">
+          <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div>
+          <div class="fab-title">Medical Assistant</div>
+          <div class="fab-subtitle" id="fabSubtitle">AI Powered · Llama 3.2</div>
+        </div>
+      </div>
+      <div class="fab-header-actions">
+        <button class="fab-icon-btn" onclick="resetFabChat()" title="New session">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        <button class="fab-icon-btn" onclick="closeFab()" title="Close">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="fab-chat-area" id="fabChatArea">
+      <div class="fab-messages" id="fabMessages"></div>
+      <div class="fab-quick-chips">
+        <button onclick="fabQuick('Book an appointment')">Book</button>
+        <button onclick="fabQuick('Show my appointments')">My Appts</button>
+        <button onclick="fabQuick('Reschedule my appointment')">Reschedule</button>
+        <button onclick="fabQuick('Cancel appointment')">Cancel</button>
+      </div>
+      <div class="fab-input-row">
+        <textarea id="fabInput" rows="1" placeholder="Type a message…"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFabMessage()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px'"></textarea>
+        <button id="fabSendBtn" onclick="sendFabMessage()">
+          <svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab-btn" id="fabBtn" onclick="openFab()">
+    <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    <span class="fab-label">Ask MedAssist</span>
+  </button>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

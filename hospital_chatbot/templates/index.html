@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hospital Appointment Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="32" height="32">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+      </svg>
+      <span>MedAssist</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        Chat
+      </a>
+      <a href="#" class="nav-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+        Appointments
+      </a>
+      <a href="#" class="nav-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        Doctors
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="hospital-info">
+        <strong>City General Hospital</strong>
+        <span>24/7 Support Available</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <header class="chat-header">
+      <div class="header-left">
+        <div class="avatar online">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div class="header-info">
+          <span class="header-title">Appointment Assistant</span>
+          <span class="header-status">Online &bull; AI Powered</span>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetChat()" title="Start new session">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        New Session
+      </button>
+    </header>
+
+    <div class="chat-window" id="chatWindow">
+      <div class="welcome-banner">
+        <div class="welcome-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="36" height="36"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        </div>
+        <h2>Welcome to City General Hospital</h2>
+        <p>I can help you book, reschedule, or cancel appointments. Please enter your full name to get started.</p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="sendQuick('Book an appointment')">Book Appointment</button>
+        <button class="quick-btn" onclick="sendQuick('Show my appointments')">My Appointments</button>
+        <button class="quick-btn" onclick="sendQuick('Cancel appointment')">Cancel</button>
+      </div>
+      <div class="input-row">
+        <textarea id="msgInput" placeholder="Type your message..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isWaiting = false;
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function sendQuick(text) {
+      document.getElementById('msgInput').value = text;
+      sendMessage();
+    }
+
+    function appendMessage(role, text) {
+      const window = document.getElementById('chatWindow');
+      const div = document.createElement('div');
+      div.className = 'message ' + role;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerText = text;
+
+      const time = document.createElement('span');
+      time.className = 'msg-time';
+      const now = new Date();
+      time.innerText = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+      div.appendChild(bubble);
+      div.appendChild(time);
+      window.appendChild(div);
+      window.scrollTop = window.scrollHeight;
+    }
+
+    function showTyping() {
+      const window = document.getElementById('chatWindow');
+      const div = document.createElement('div');
+      div.className = 'message bot typing-indicator';
+      div.id = 'typingDot';
+      div.innerHTML = '<div class="bubble"><span></span><span></span><span></span></div>';
+      window.appendChild(div);
+      window.scrollTop = window.scrollHeight;
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typingDot');
+      if (el) el.remove();
+    }
+
+    async function sendMessage() {
+      if (isWaiting) return;
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage('user', text);
+      input.value = '';
+      input.style.height = 'auto';
+      isWaiting = true;
+      document.getElementById('sendBtn').disabled = true;
+
+      showTyping();
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text})
+        });
+        const data = await res.json();
+        removeTyping();
+        appendMessage('bot', data.reply);
+      } catch(e) {
+        removeTyping();
+        appendMessage('bot', 'Connection error. Please try again.');
+      }
+
+      isWaiting = false;
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('msgInput').focus();
+    }
+
+    async function resetChat() {
+      try {
+        const res = await fetch('/reset', {method: 'POST'});
+        const data = await res.json();
+        const w = document.getElementById('chatWindow');
+        w.innerHTML = '';
+        appendMessage('bot', data.reply);
+      } catch(e) {}
+    }
+
+    window.onload = function() {
+      appendMessage('bot', 'Hello! Welcome to City General Hospital appointment system.\n\nPlease enter your full name to get started (e.g. John Smith).');
+      document.getElementById('msgInput').focus();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant – City General Hospital{% endblock %}
+{% block page_title %}AI Appointment Assistant{% endblock %}
+
+{% block content %}
+<div class="chat-page-layout">
+
+  <!-- Left: Chat Interface -->
+  <div class="chat-main-panel">
+    <div class="chat-main-header">
+      <div class="chat-main-avatar">
+        <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      </div>
+      <div>
+        <div class="chat-main-title">MedAssist</div>
+        <div class="chat-main-sub">
+          <span class="online-dot"></span>
+          AI Powered · Llama 3.2 · Symptom-aware routing
+        </div>
+      </div>
+      <button class="reset-session-btn" onclick="resetMainChat()">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        New Conversation
+      </button>
+    </div>
+
+    <div class="chat-messages-full">
+      <div class="chat-messages-body" id="mainMessages"></div>
+      <div class="chat-quick-chips">
+        <button onclick="mainQuick('Book an appointment')">📅 Book</button>
+        <button onclick="mainQuick('Show my appointments')">📋 My Appointments</button>
+        <button onclick="mainQuick('Reschedule my appointment')">🔄 Reschedule</button>
+        <button onclick="mainQuick('Cancel appointment')">❌ Cancel</button>
+        <button onclick="mainQuick('I have a headache')">🤕 I have a symptom</button>
+      </div>
+      <div class="chat-input-bar">
+        <textarea id="mainInput" rows="1" placeholder="Try: 'book me with a cardiologist next monday morning'"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMain()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button id="mainSendBtn" onclick="sendMain()">
+          <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Context Panel -->
+  <div class="chat-side-panel">
+
+    <div class="side-panel-section">
+      <h3 class="side-panel-title">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        Your Profile
+      </h3>
+      <div class="pat-profile">
+        <div class="pat-profile-avatar">{{ current_user.name[0]|upper }}</div>
+        <div class="pat-profile-info">
+          <div class="pat-profile-name">{{ current_user.name }}</div>
+          <div class="pat-profile-id">NIC: {{ current_user.nic }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel-section">
+      <h3 class="side-panel-title">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+        Your Appointments
+        <span class="live-pill" style="margin-left:auto"><span class="live-dot"></span>Live</span>
+      </h3>
+      <div id="sideApptsBody" class="side-empty">Loading…</div>
+    </div>
+
+    <div class="side-panel-section">
+      <h3 class="side-panel-title">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        Tips
+      </h3>
+      <div class="howto-list">
+        <div class="howto-item"><span class="howto-num">i</span>Try natural language: "next Monday morning", "tomorrow afternoon"</div>
+        <div class="howto-item"><span class="howto-num">i</span>Mention a symptom — I'll route you: "I have chest pain"</div>
+        <div class="howto-item"><span class="howto-num">i</span>Say "back" or "cancel" anytime to exit a flow</div>
+        <div class="howto-item warn"><span class="howto-num warn">!</span>For emergencies, call 1122 (Rescue) or 115 — don't use this bot</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let mainWaiting = false;
+  const userName = "{{ current_user.name|escape }}";
+
+  function mainQuick(text) {
+    document.getElementById('mainInput').value = text;
+    sendMain();
+  }
+
+  async function sendMain() {
+    if (mainWaiting) return;
+    const input = document.getElementById('mainInput');
+    const text  = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.style.height = 'auto';
+    await sendMainMsg(text);
+  }
+
+  function appendEmergencyAlert() {
+    const box = document.getElementById('mainMessages');
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.innerHTML = '<div class="msg-bubble emergency-bubble">&#128222; Calling medical help...</div>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function appendMainMsg(role, text) {
+    const box = document.getElementById('mainMessages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.innerText = text;
+    const ts = document.createElement('span');
+    ts.className = 'msg-ts';
+    const now = new Date();
+    ts.innerText = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    div.appendChild(bubble);
+    div.appendChild(ts);
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function showMainTyping() {
+    const box = document.getElementById('mainMessages');
+    const el  = document.createElement('div');
+    el.className = 'msg bot';
+    el.id = 'mainTyping';
+    el.innerHTML = '<div class="msg-bubble typing-bubble"><span></span><span></span><span></span></div>';
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+  function hideMainTyping() {
+    const el = document.getElementById('mainTyping');
+    if (el) el.remove();
+  }
+
+  async function sendMainMsg(text) {
+    mainWaiting = true;
+    document.getElementById('mainSendBtn').disabled = true;
+    appendMainMsg('user', text);
+    showMainTyping();
+
+    try {
+      const res  = await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: text})
+      });
+      const data = await res.json();
+      hideMainTyping();
+      appendMainMsg('bot', data.reply);
+      if (data.emergency) appendEmergencyAlert();
+      refreshSideAppts();
+    } catch(e) {
+      hideMainTyping();
+      appendMainMsg('bot', 'Connection error. Please try again.');
+    }
+
+    mainWaiting = false;
+    document.getElementById('mainSendBtn').disabled = false;
+    document.getElementById('mainInput').focus();
+  }
+
+  async function refreshSideAppts() {
+    const appts = await fetch('/api/patient-appointments').then(r => r.json());
+    const box   = document.getElementById('sideApptsBody');
+    if (!Array.isArray(appts) || appts.length === 0) {
+      box.innerHTML = '<div class="side-empty">No upcoming appointments.</div>';
+      return;
+    }
+    box.innerHTML = appts.map(a => `
+      <div class="side-appt-item">
+        <div class="side-appt-doctor">${a.doctor_name}</div>
+        <div class="side-appt-meta">
+          <span class="dept-badge dept-${deptClass(a.department)}">${a.department}</span>
+          <span class="side-appt-time">${a.date} · ${a.time}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  async function resetMainChat() {
+    const data = await fetch('/reset', {method:'POST'}).then(r => r.json());
+    document.getElementById('mainMessages').innerHTML = '';
+    appendMainMsg('bot', data.reply);
+    refreshSideAppts();
+  }
+
+  // Restore conversation
+  fetch('/api/chat-state').then(r => r.json()).then(data => {
+    if (data.history && data.history.length > 0) {
+      data.history.forEach(m => appendMainMsg(m.role === 'user' ? 'user' : 'bot', m.content));
+    } else {
+      const firstName = userName.split(' ')[0];
+      appendMainMsg('bot',
+        `Hi ${firstName}, welcome to City General Hospital. I'm MedAssist.\n\n` +
+        `I can help you book, reschedule, or cancel appointments. Try:\n\n` +
+        `  - "Book a cardiologist for next Monday morning"\n` +
+        `  - "I have a headache" (I'll route you to the right specialist)\n` +
+        `  - "Show my appointments"\n\n` +
+        `What would you like to do today?`
+      );
+    }
+    refreshSideAppts();
+  });
+  setInterval(refreshSideAppts, 5000);
+</script>
+{% endblock %}

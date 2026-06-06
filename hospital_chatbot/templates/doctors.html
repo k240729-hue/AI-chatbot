@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Doctors – City General Hospital{% endblock %}
+{% block page_title %}Medical Staff{% endblock %}
+
+{% block content %}
+<div class="section-intro">
+  <p>Our team of specialists is available to provide expert care across all major departments.</p>
+</div>
+
+<div class="doctor-grid" id="doctorGrid">
+  <div class="table-empty">Loading doctors…</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function loadDoctors() {
+    const doctors = await fetch('/api/doctors').then(r => r.json());
+    const grid = document.getElementById('doctorGrid');
+
+    grid.innerHTML = doctors.map(d => {
+      const cls    = deptClass(d.department);
+      const ini    = initials(d.name);
+      const next   = d.next_slot ? `${d.next_slot.date} at ${d.next_slot.time}` : 'No slots';
+      const avail  = d.slots_count > 0
+        ? `<span class="slots-avail">${d.slots_count} slot${d.slots_count !== 1 ? 's' : ''} available</span>`
+        : `<span class="slots-none">Fully booked</span>`;
+
+      return `
+        <div class="doctor-card">
+          <div class="doctor-card-banner dept-bg-${cls}"></div>
+          <div class="doctor-card-body">
+            <div class="doctor-avatar dept-${cls}">${ini}</div>
+            <h3 class="doctor-name">${d.name}</h3>
+            <span class="dept-badge dept-${cls}">${d.department}</span>
+            <div class="doctor-slots-row">
+              ${avail}
+            </div>
+            <div class="doctor-next">
+              <svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>
+              Next: ${next}
+            </div>
+            <a href="/chat-page" class="book-btn dept-btn-${cls}">
+              <svg viewBox="0 0 24 24" width="15" height="15"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+              Book via AI
+            </a>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  loadDoctors();
+  setInterval(loadDoctors, 15000);
+</script>
+{% endblock %}
